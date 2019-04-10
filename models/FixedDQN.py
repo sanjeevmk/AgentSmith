@@ -127,6 +127,7 @@ class FixedDQN:
         
     def train(self):
         totalScore = 0
+        bestreward = -1e9
         for i in range(self.num_episodes):
             if self.tau!=-1:
                 self.QTargetTrainer.copy(self.QTrainer.network)
@@ -138,6 +139,9 @@ class FixedDQN:
                 totalScore = 0
             QLoss,episodeRewards = self.train_one_episode()
             self.reward_history.append(episodeRewards)
+            if np.mean(self.reward_history) > bestreward:
+                bestreward = np.mean(reward_history)
+                self.QTrainer.save(self.output_weight)
             totalScore += episodeRewards
             print("Episode: {} Rewards: {} Explore: {} Average: {} Loss: {}".format(i,episodeRewards,self.explore_probability,np.mean(self.reward_history),QLoss))
 
