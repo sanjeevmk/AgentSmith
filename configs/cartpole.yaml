@@ -1,0 +1,23 @@
+network_params:
+  lr: 0.001
+fixeddqn_params:
+  tau: 200
+dqn_params:
+  memory_size: 100000
+  batch_size: 32
+  pretrain_length: 2000
+  num_episodes: 10000
+  steps_per_episode: 100000
+  explore_probability: 1.0
+  gamma: 0.99
+  explore_decay: 0.99
+ui_params:
+  render: False
+task_params:
+  target_score: 195
+  consistency: 100
+app_params:
+  outputdir: "../weights/"
+  weightFile: "cartpole"
+train: True 
+environment: 'CartPole-v0'
