@@ -15,3 +15,7 @@ def resize(image,width=84,height=84):
     im = Image.fromarray(image.astype('uint8'))
     im = im.resize((height,width),PIL.Image.ANTIALIAS)
     return np.asarray(im)
+
+def toUint8(image):
+    im = image*255
+    return im.astype('uint8')

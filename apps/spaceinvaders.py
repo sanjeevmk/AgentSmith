@@ -23,10 +23,16 @@ QTrainer = ImageTrainer(QNetwork,config)
 if not config['train']:
     QTrainer.load(os.path.join(config['app_params']['outputdir'],config['app_params']['weightFile']))
 
-def stateProcessor(image):
-    image = utils.rgb2gray(image)
-    image = utils.resize(image)
-    image = utils.scale01(image)
+def stateProcessor(image,mode='storage'):
+    if mode=='storage':
+        image = utils.rgb2gray(image)
+        image = utils.resize(image)
+    elif mode=='network':
+        for i in range(image.shape[0]):
+            image[i,:,:] = utils.scale01(image[i,:,:])
+    else:
+        print("Unknown mode {}".format(mode))
+        exit()
     return image
 
 QTargetNetwork = DQN_image(config['task_params']['stack_size'],env.action_space.n).cuda()

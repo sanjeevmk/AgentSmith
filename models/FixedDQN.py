@@ -34,7 +34,7 @@ class FixedDQN:
     def pretrain(self):
         state = self.env.reset()
         if self.preprocessFunc is not None:
-            state = self.preprocessFunc(state)
+            state = self.preprocessFunc(state,mode='storage')
         for i in range(self.stack_size):
             self.stateHistory.append(state)
 
@@ -44,12 +44,13 @@ class FixedDQN:
             if terminal:
                 next_state = np.zeros(next_state.shape)
             if self.preprocessFunc is not None:
-                next_state = self.preprocessFunc(next_state)
+                next_state = self.preprocessFunc(next_state,mode='storage')
             if self.stack_size>0:
                 state = np.stack(self.stateHistory)
             self.stateHistory.append(next_state)
             if self.stack_size>0:
                 next_state = np.stack(self.stateHistory)
+
             self.buffer.append([state,action,next_state,reward,terminal])
             state = next_state
 
@@ -58,14 +59,22 @@ class FixedDQN:
         if toss < self.explore_probability:
             action = random.choice(range(self.num_actions))
         else:
+            if self.preprocessFunc is not None:
+                state = self.preprocessFunc(state,mode='network')
             action = self.QTrainer.predict(state)
             action = np.argmax(action)
         return action
 
     def updateQ(self,sample):
-        states = np.array([s[0] for s in sample])
+        if self.preprocessFunc is not None:
+            states = np.array([self.preprocessFunc(s[0],mode='network') for s in sample])
+        else: 
+            states = np.array([s[0] for s in sample])
         actions = [s[1] for s in sample]
-        next_states = np.array([s[2] for s in sample])
+        if self.preprocessFunc is not None:
+            next_states = np.array([self.preprocessFunc(s[2],mode='network') for s in sample])
+        else:
+            next_states = np.array([s[2] for s in sample])
         rewards = [s[3] for s in sample]
         terminals = [s[4] for s in sample]
         QNext = self.QTargetTrainer.predict(next_states)
@@ -89,7 +98,7 @@ class FixedDQN:
     def train_one_episode(self):
         state = self.env.reset()
         if self.preprocessFunc is not None:
-            state = self.preprocessFunc(state)
+            state = self.preprocessFunc(state,mode='storage')
         for i in range(self.stack_size):
             self.stateHistory.append(state)
         if self.stack_size>0:
@@ -105,7 +114,7 @@ class FixedDQN:
             episodeRewards += reward
             reward = self.reward_policy(next_state,reward)
             if self.preprocessFunc is not None:
-                next_state = self.preprocessFunc(next_state)
+                next_state = self.preprocessFunc(next_state,mode='storage')
             if self.stack_size>0:
                 state = np.stack(self.stateHistory)
             self.stateHistory.append(next_state)
@@ -119,6 +128,7 @@ class FixedDQN:
             stepCount += 1
             self.globalStep += 1
             sample = random.sample(self.buffer,self.batch_size)
+
             loss = self.updateQ(sample)
             self.explore_probability = max(0.001,self.explore_probability*self.explore_decay)
         if self.render:
@@ -140,8 +150,8 @@ class FixedDQN:
             QLoss,episodeRewards = self.train_one_episode()
             self.reward_history.append(episodeRewards)
             if np.mean(self.reward_history) > bestreward:
-                bestreward = np.mean(reward_history)
-                print("Best Reward: {}",bestreward)
+                bestreward = np.mean(self.reward_history)
+                print("Best Reward: {}".format(bestreward))
                 self.QTrainer.save(self.output_weight)
             totalScore += episodeRewards
             print("Episode: {} Rewards: {} Explore: {} Average: {} Loss: {}".format(i,episodeRewards,self.explore_probability,np.mean(self.reward_history),QLoss))
