@@ -141,6 +141,7 @@ class FixedDQN:
             self.reward_history.append(episodeRewards)
             if np.mean(self.reward_history) > bestreward:
                 bestreward = np.mean(reward_history)
+                print("Best Reward: {}",bestreward)
                 self.QTrainer.save(self.output_weight)
             totalScore += episodeRewards
             print("Episode: {} Rewards: {} Explore: {} Average: {} Loss: {}".format(i,episodeRewards,self.explore_probability,np.mean(self.reward_history),QLoss))
