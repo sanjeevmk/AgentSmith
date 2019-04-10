@@ -41,6 +41,8 @@ class FixedDQN:
         for i in range(self.pretrain_length):
             action = random.choice(range(self.num_actions))
             next_state,reward,terminal,_ = self.env.step(action)
+            if terminal:
+                next_state = np.zeros(next_state.shape)
             if self.preprocessFunc is not None:
                 next_state = self.preprocessFunc(next_state)
             if self.stack_size>0:
@@ -98,6 +100,8 @@ class FixedDQN:
         while stepCount < self.steps_per_episode and not terminal:
             action = self.getAction(state)
             next_state,reward,terminal,_ = self.env.step(action)
+            if terminal:
+                next_state = np.zeros(next_state.shape)
             episodeRewards += reward
             reward = self.reward_policy(next_state,reward)
             if self.preprocessFunc is not None:
@@ -124,6 +128,8 @@ class FixedDQN:
     def train(self):
         totalScore = 0
         for i in range(self.num_episodes):
+            if self.render:
+                self.env.render()
             if self.isSolved(i,totalScore):
                 break
             if i%self.targetConsistency==0:
@@ -133,7 +139,7 @@ class FixedDQN:
             totalScore += episodeRewards
             print("Episode: {} Rewards: {} Explore: {} Average: {} Loss: {}".format(i,episodeRewards,self.explore_probability,np.mean(self.reward_history),QLoss))
 
-
+        self.env.close()
         self.QTrainer.save(self.output_weight)
     
     def run(self):
