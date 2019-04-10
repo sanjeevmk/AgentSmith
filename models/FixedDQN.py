@@ -114,7 +114,7 @@ class FixedDQN:
             self.buffer.append((state,action,next_state,reward,terminal))
             state = next_state
 
-            if self.globalStep%self.tau==0:
+            if self.globalStep%self.tau==0 and self.tau!=-1:
                 self.QTargetTrainer.copy(self.QTrainer.network)
             stepCount += 1
             self.globalStep += 1
@@ -128,6 +128,8 @@ class FixedDQN:
     def train(self):
         totalScore = 0
         for i in range(self.num_episodes):
+            if self.tau!=-1:
+                self.QTargetTrainer.copy(self.QTrainer.network)
             if self.render:
                 self.env.render()
             if self.isSolved(i,totalScore):
