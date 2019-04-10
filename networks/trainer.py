@@ -48,10 +48,22 @@ class Trainer:
     def load(self,weightPath):
         self.network.load_state_dict(torch.load(weightPath))
 
+def weights_init(m):
+    classname = m.__class__.__name__
+    #if type(m) == nn.Linear:
+    #    nn.init.xavier_uniform(m.weight)
+    #if type(m) == nn.Conv2d:
+    #    nn.init.xavier_uniform(m.weight)
+    if type(m) == nn.Linear or type(m)==nn.Conv2d:
+        nn.init.xavier_uniform_(m.weight)
+        m.bias.data.fill_(0.01)
+
 class ImageTrainer:
     def __init__(self,network,config,train=True):
         self.network = network
-        self.optimizer = torch.optim.Adam(self.network.parameters(),lr=config['network_params']['lr'])
+        #self.network.apply(weights_init)
+        #self.optimizer = torch.optim.Adam(self.network.parameters(),lr=config['network_params']['lr'])
+        self.optimizer = torch.optim.RMSprop(self.network.parameters(),lr=config['network_params']['lr'],alpha=0.95,eps=0.01)
         self.init_rate = config['network_params']['lr']
         if train:
             self.network.train()
@@ -72,11 +84,13 @@ class ImageTrainer:
         loss = self.loss(y,targets)
         loss.backward()
         self.optimizer.step()
+        '''
         lr = self.init_rate* (0.9 ** (self.epoch // 100))
         lr = max(0.001,lr)
         for param_group in self.optimizer.param_groups:
                 param_group['lr'] = lr
         self.epoch+=1
+        '''
         return loss.item()
 
     def predict(self,inputs):

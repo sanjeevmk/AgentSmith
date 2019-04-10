@@ -41,8 +41,8 @@ class FixedDQN:
         for i in range(self.pretrain_length):
             action = random.choice(range(self.num_actions))
             next_state,reward,terminal,_ = self.env.step(action)
-            if terminal:
-                next_state = np.zeros(next_state.shape)
+            #if terminal:
+            #    next_state = np.zeros(next_state.shape)
             if self.preprocessFunc is not None:
                 next_state = self.preprocessFunc(next_state,mode='storage')
             if self.stack_size>0:
@@ -109,8 +109,8 @@ class FixedDQN:
         while stepCount < self.steps_per_episode and not terminal:
             action = self.getAction(state)
             next_state,reward,terminal,_ = self.env.step(action)
-            if terminal:
-                next_state = np.zeros(next_state.shape)
+            #if terminal:
+            #    next_state = np.zeros(next_state.shape)
             episodeRewards += reward
             reward = self.reward_policy(next_state,reward)
             if self.preprocessFunc is not None:
@@ -139,6 +139,7 @@ class FixedDQN:
         totalScore = 0
         bestreward = -1e9
         for i in range(self.num_episodes):
+            print(len(self.buffer))
             if self.tau!=-1:
                 self.QTargetTrainer.copy(self.QTrainer.network)
             if self.render:
