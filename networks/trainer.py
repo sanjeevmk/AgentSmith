@@ -58,8 +58,8 @@ class ImageTrainer:
         else:
             self.network.eval()
 
-        self.loss = nn.MSELoss()
-        #self.loss = nn.SmoothL1Loss()
+        #self.loss = nn.MSELoss()
+        self.loss = nn.SmoothL1Loss()
         self.epoch=0
 
     def train(self,inputs,targets):
