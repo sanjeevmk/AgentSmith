@@ -130,7 +130,9 @@ class FixedDQN:
             sample = random.sample(self.buffer,self.batch_size)
 
             loss = self.updateQ(sample)
-            self.explore_probability = max(0.001,self.explore_probability*self.explore_decay)
+            #self.explore_probability = max(0.001,self.explore_probability*self.explore_decay)
+            self.explore_probability -= (0.9/100000)
+            self.explore_probability = max(0.1,self.explore_probability)
         if self.render:
             self.env.render()
         return loss,episodeRewards
@@ -139,7 +141,6 @@ class FixedDQN:
         totalScore = 0
         bestreward = -1e9
         for i in range(self.num_episodes):
-            print(len(self.buffer))
             if self.tau!=-1:
                 self.QTargetTrainer.copy(self.QTrainer.network)
             if self.render:
@@ -152,10 +153,10 @@ class FixedDQN:
             self.reward_history.append(episodeRewards)
             if np.mean(self.reward_history) > bestreward:
                 bestreward = np.mean(self.reward_history)
-                print("Best Reward: {}".format(bestreward))
+                print("Best Reward: {}".format(bestreward),flush=True)
                 self.QTrainer.save(self.output_weight)
             totalScore += episodeRewards
-            print("Episode: {} Rewards: {} Explore: {} Average: {} Loss: {}".format(i,episodeRewards,self.explore_probability,np.mean(self.reward_history),QLoss))
+            print("Episode: {} Rewards: {} Explore: {} Average: {} Loss: {}".format(i,episodeRewards,self.explore_probability,np.mean(self.reward_history),QLoss),flush=True)
 
         self.env.close()
         self.QTrainer.save(self.output_weight)
