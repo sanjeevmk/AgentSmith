@@ -28,8 +28,7 @@ def stateProcessor(image,mode='storage'):
         image = utils.rgb2gray(image)
         image = utils.resize(image)
     elif mode=='network':
-        for i in range(image.shape[0]):
-            image[i,:,:] = utils.scale01(image[i,:,:])
+        image = utils.scale01(image)
     else:
         print("Unknown mode {}".format(mode))
         exit()

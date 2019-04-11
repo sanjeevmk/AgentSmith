@@ -18,6 +18,7 @@ task_params:
   consistency: 100
   stack_size: 4
   state_type: 'image'
+  update_frequency: 4
 app_params:
   outputdir: "../weights/"
   weightFile: "spaceinvaders"
