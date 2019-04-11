@@ -29,6 +29,7 @@ class FixedDQN:
         self.stateType = config['task_params']['state_type']
         self.updateFrequency = config['task_params']['update_frequency']
         self.stateHistory = deque(maxlen=self.stack_size)
+        self.frame_skip = config['task_params']['frame_skip']
         self.preprocessFunc = preprocessFunc
         self.globalStep = 0
 
@@ -69,11 +70,8 @@ class FixedDQN:
     def stackFrames(self,f):
         stacked = []
         stacked.append(f[0])
-        for i in range(f[1],f[1]-self.stack_size+1,-1):
-            if i < 0:
-                stacked.append(stacked[-1])
-            else:
-                stacked.append(self.buffer[i][0])
+        for i in range(f[1]+self.frame_skip,f[1]+self.frame_skip*(self.stack_size-1)+1,self.frame_skip):
+            stacked.append(np.maximum(self.buffer[i-1][0],self.buffer[i][0]))
         return np.stack(stacked)
 
     def updateQ(self,sampleIndices):
@@ -154,7 +152,7 @@ class FixedDQN:
             stepCount += 1
             self.globalStep += 1
             #sample = random.sample(self.buffer,self.batch_size)
-            sampleIndices = random.sample(range(len(self.buffer)-1),self.batch_size)
+            sampleIndices = random.sample(range(len(self.buffer)-self.frame_skip*(self.stack_size-1)),self.batch_size)
 
             if stepCount%self.updateFrequency==0:
                 loss = self.updateQ(sampleIndices)

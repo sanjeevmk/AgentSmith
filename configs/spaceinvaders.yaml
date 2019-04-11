@@ -14,6 +14,7 @@ dqn_params:
 ui_params:
   render: False 
 task_params:
+  frame_skip: 4
   target_score: 3000
   consistency: 100
   stack_size: 4
