@@ -75,6 +75,7 @@ class ImageTrainer:
         self.epoch=0
 
     def train(self,inputs,targets):
+        self.network.train()
         self.optimizer.zero_grad()
         inputs = torch.from_numpy(inputs).cuda().float()
         if len(inputs.size()) < 4:

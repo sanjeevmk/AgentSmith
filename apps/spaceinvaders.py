@@ -2,7 +2,7 @@ import gym
 import sys
 from yaml import load
 from yaml import CLoader as Loader, CDumper as Dumper
-
+import faulthandler; faulthandler.enable()
 sys.path.append("../")
 config = load(open(sys.argv[1],'r'),Loader)
 from utils import utils
@@ -29,7 +29,12 @@ def stateProcessor(image,mode='storage'):
         image = utils.rgb2gray(image)
         image = utils.resize(image)
     elif mode=='network':
-        image = utils.scale01(image)
+        if len(image.shape)==2:
+            image = utils.scale01(image)
+        if len(image.shape)==3:
+            for i in range(image.shape[0]):
+                image[i,:,:] = utils.scale01(image[i,:,:])
+
     else:
         print("Unknown mode {}".format(mode))
         exit()

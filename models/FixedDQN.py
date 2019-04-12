@@ -43,9 +43,8 @@ class FixedDQN:
             next_frame,reward,terminal,_ = self.env.step(action)
             self.buffer.append([frame,action,reward,terminal])
             if terminal:
-                frame = self.env.reset()
-            else:
-                frame = next_frame
+                self.env.reset()
+            frame = next_frame
             if self.preprocessFunc is not None:
                 frame = self.preprocessFunc(frame,mode='storage')
             action = random.choice(range(self.num_actions))
@@ -64,7 +63,7 @@ class FixedDQN:
     def stackFrames(self,f):
         stacked = []
         stacked.append(f[0])
-        for i in range(f[1]+1,f[1]+self.stack_size,1):
+        for i in range(f[1]-1,f[1]-self.stack_size,-1):
             stacked.append(self.buffer[i][0])
         return np.stack(stacked)
 
@@ -84,13 +83,13 @@ class FixedDQN:
         actions = [self.buffer[si][1] for si in sampleIndices]
 
         if self.preprocessFunc is not None:
-            next_frames = np.array([[self.preprocessFunc(self.buffer[si+1][0],mode='network'),si] for si in sampleIndices])
+            next_frames = np.array([[self.preprocessFunc(self.buffer[si+1][0],mode='network'),si+1] for si in sampleIndices])
             if self.stack_size > 0:
                 next_states = np.array([self.stackFrames(f) for f in next_frames])
             else:
                 next_states = frames[:,0]
         else:
-            next_frames = np.array([[self.buffer[si+1][0],si] for si in sampleIndices])
+            next_frames = np.array([[self.buffer[si+1][0],si+1] for si in sampleIndices])
             if self.stack_size > 0:
                 next_states = np.array([self.stackFrames(f) for f in next_frames])
             else:
@@ -117,39 +116,45 @@ class FixedDQN:
 
     def train_one_episode(self):
         frame = self.env.reset()
-        if self.preprocessFunc is not None:
-            frame = self.preprocessFunc(frame,mode='storage')
-        for i in range(self.stack_size):
-            self.stateHistory.append(frame)
-        if self.stack_size>0:
-            state = np.stack(self.stateHistory)
+        for i in range(self.stack_size-1):
+            if self.preprocessFunc is not None:
+                frame = self.preprocessFunc(frame,mode='storage')
+            action = random.choice(range(self.num_actions))
+            next_frame,reward,terminal,_ = self.env.step(action)
+            self.buffer.append((frame,action,reward,terminal))
+            frame = next_frame
         stepCount = 0
         terminal = False
         episodeRewards = 0.0
         while stepCount < self.steps_per_episode and not terminal:
+            if self.preprocessFunc is not None:
+                frame = self.preprocessFunc(frame,mode='storage')
+            if self.stack_size>0:
+                self.buffer.append((frame,action,reward,terminal))
+                state = self.stackFrames([frame,len(self.buffer)-1])
             action = self.getAction(state)
             next_frame,reward,terminal,_ = self.env.step(action)
             episodeRewards += reward
             reward = self.reward_policy(next_frame,reward)
             if self.preprocessFunc is not None:
                 next_frame = self.preprocessFunc(next_frame,mode='storage')
-            self.stateHistory.append(next_frame)
-            if self.stack_size>0:
-                next_state = np.stack(self.stateHistory)
-            self.buffer.append((next_frame,action,reward,terminal))
-            state = next_state 
+            #self.stateHistory.append(next_frame)
+            #self.buffer.append((next_frame,action,reward,terminal))
+            #if self.stack_size>0:
+            #    next_state = self.stackFrames([next_frame,len(self.buffer)-1])
+            frame = next_frame
 
             if self.globalStep%self.tau==0 and self.tau!=-1:
                 self.QTargetTrainer.copy(self.QTrainer.network)
             stepCount += 1
             self.globalStep += 1
             #sample = random.sample(self.buffer,self.batch_size)
-            sampleIndices = random.sample(range(len(self.buffer)-self.stack_size-1),self.batch_size)
+            sampleIndices = random.sample(range(self.stack_size,len(self.buffer)-2),self.batch_size)
 
             if stepCount%self.updateFrequency==0:
                 loss = self.updateQ(sampleIndices)
             #self.explore_probability = max(0.001,self.explore_probability*self.explore_decay)
-            self.explore_probability -= (0.9/100000)
+            self.explore_probability -= (0.9/1000000)
             self.explore_probability = max(0.1,self.explore_probability)
         if self.render:
             self.env.render()
@@ -159,6 +164,7 @@ class FixedDQN:
         totalScore = 0
         bestreward = -1e9
         for i in range(self.num_episodes):
+            print(self.globalStep)
             if self.tau!=-1:
                 self.QTargetTrainer.copy(self.QTrainer.network)
             if self.render:
