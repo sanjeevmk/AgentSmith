@@ -1,9 +1,9 @@
 network_params:
   lr: 0.00025
 fixeddqn_params:
-  tau: 1 
+  tau: -1 
 dqn_params:
-  memory_size: 1000000
+  memory_size: 400000
   batch_size: 32
   pretrain_length: 50000
   num_episodes: 50000

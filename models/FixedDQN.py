@@ -37,24 +37,18 @@ class FixedDQN:
         frame = self.env.reset()
         if self.preprocessFunc is not None:
             frame = self.preprocessFunc(frame,mode='storage')
-        #for i in range(self.stack_size):
-        #    self.stateHistory.append(frame)
+        action = random.choice(range(self.num_actions))
 
         for i in range(self.pretrain_length):
-            action = random.choice(range(self.num_actions))
             next_frame,reward,terminal,_ = self.env.step(action)
-            #if terminal:
-            #    next_state = np.zeros(next_state.shape)
+            self.buffer.append([frame,action,reward,terminal])
+            if terminal:
+                frame = self.env.reset()
+            else:
+                frame = next_frame
             if self.preprocessFunc is not None:
-                next_frame = self.preprocessFunc(next_frame,mode='storage')
-            #if self.stack_size>0:
-            #    state = np.stack(self.stateHistory)
-            #self.stateHistory.append(next_state)
-            #if self.stack_size>0:
-            #    next_state = np.stack(self.stateHistory)
-
-            self.buffer.append([next_frame,action,reward,terminal])
-            frame = next_frame
+                frame = self.preprocessFunc(frame,mode='storage')
+            action = random.choice(range(self.num_actions))
 
     def getAction(self,state):
         toss = random.uniform(0,1)
@@ -70,8 +64,8 @@ class FixedDQN:
     def stackFrames(self,f):
         stacked = []
         stacked.append(f[0])
-        for i in range(f[1]+self.frame_skip,f[1]+self.frame_skip*(self.stack_size-1)+1,self.frame_skip):
-            stacked.append(np.maximum(self.buffer[i-1][0],self.buffer[i][0]))
+        for i in range(f[1]+1,f[1]+self.stack_size,1):
+            stacked.append(self.buffer[i][0])
         return np.stack(stacked)
 
     def updateQ(self,sampleIndices):
@@ -135,8 +129,6 @@ class FixedDQN:
         while stepCount < self.steps_per_episode and not terminal:
             action = self.getAction(state)
             next_frame,reward,terminal,_ = self.env.step(action)
-            #if terminal:
-            #    next_state = np.zeros(next_state.shape)
             episodeRewards += reward
             reward = self.reward_policy(next_frame,reward)
             if self.preprocessFunc is not None:
@@ -152,7 +144,7 @@ class FixedDQN:
             stepCount += 1
             self.globalStep += 1
             #sample = random.sample(self.buffer,self.batch_size)
-            sampleIndices = random.sample(range(len(self.buffer)-self.frame_skip*(self.stack_size-1)),self.batch_size)
+            sampleIndices = random.sample(range(len(self.buffer)-self.stack_size-1),self.batch_size)
 
             if stepCount%self.updateFrequency==0:
                 loss = self.updateQ(sampleIndices)

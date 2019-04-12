@@ -8,6 +8,7 @@ config = load(open(sys.argv[1],'r'),Loader)
 from utils import utils
 
 env = gym.make(config['environment'])
+env.frame_skip = config['task_params']['frame_skip']
 from networks.QNetworks import DQN_image
 from networks.trainer import ImageTrainer
 from models.DQN import DQN
